@@ -12,6 +12,9 @@ function Token(token) {
     this._valid = true;
   }
 
+  console.log( 'TOKEN.header', this._header );
+  console.log( 'TOKEN.content', this._content );
+
   //console.log( "realm_access", this._content.realm_access );
   //console.log( "resource_access", this._content.resource_access );
 }
