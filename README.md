@@ -22,3 +22,9 @@ app.all( '/keycloak-admin/*', keycloak.admin() )
 // provide a link to perform a keycloak logout
 app.get( '/logout', keycloak.logout() )
 ~~~~
+
+## Access to the token
+
+Once a user has authenticated, the Keycloak middleware will
+add a `token` to the response `locals`.
+
