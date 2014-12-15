@@ -10,17 +10,16 @@ keycloak.loadConfig( /* defaults to ./keycloak.json */ );
 
 var app = ... 
 
-// secure the whole app with Keycloak authn
-app.use( keycloak.middleware() );
+// Wire up Keycloak generally for the application
 
-// secure a sub-portion with specifically-applied middleware
-app.get( '/admin/*', keycloak.middleware(), myHandler );
+app.use( keycloak.middleware({
+  logout: '/logout', /* user-accessible logout link */
+  admin: '/', /* root URL for keycloak admin callbacks */
+}) );
 
-// provide a place for POST-backs from Keycloak
-app.all( '/keycloak-admin/*', keycloak.admin() )
+// protect a sub-portion with specifically-applied middleware
+app.get( '/admin/*', keycloak.protect(), myHandler );
 
-// provide a link to perform a keycloak logout
-app.get( '/logout', keycloak.logout() )
 ~~~~
 
 ## Access to the token
