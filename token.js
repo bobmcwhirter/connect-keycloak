@@ -1,22 +1,21 @@
+function Token(keycloak, token) {
 
-function Token(token) {
   this._secure = token;
 
-  if ( ! token ) {
-    this._valid = false;
-  } else {
-    var parts = token.split('.');
-    this._header = JSON.parse( new Buffer( parts[0], 'base64' ).toString() );
-    this._content = JSON.parse( new Buffer( parts[1], 'base64' ).toString() );
-    this._signature = parts[2];
-    this._valid = true;
+  this._valid = false;
+  if ( token ) {
+    try {
+      var parts = token.split('.');
+      this._header = JSON.parse( new Buffer( parts[0], 'base64' ).toString() );
+      this._content = JSON.parse( new Buffer( parts[1], 'base64' ).toString() );
+      this._signature = new Buffer( parts[2], 'base64' );
+
+      this._valid = keycloak.validateToken( this );
+    } catch (err) {
+      // ignore, but invalid
+      this._valid = false;
+    }
   }
-
-  console.log( 'TOKEN.header', this._header );
-  console.log( 'TOKEN.content', this._content );
-
-  //console.log( "realm_access", this._content.realm_access );
-  //console.log( "resource_access", this._content.resource_access );
 }
 
 Token.prototype.isValid = function() {
@@ -46,6 +45,31 @@ Object.defineProperty( Token.prototype, 'secure', {
     return this._secure
   }
 });
+
+Object.defineProperty( Token.prototype, 'issuedAt', {
+  get: function() {
+    return this._content.iat;
+  }
+})
+
+Object.defineProperty( Token.prototype, 'signature', {
+  get: function() {
+    return this._signature;
+  }
+})
+
+Object.defineProperty( Token.prototype, 'signatureAlgorithm', {
+  get: function() {
+    return this._header.alg;
+  }
+})
+
+Object.defineProperty( Token.prototype, 'signedPart', {
+  get: function() {
+    var parts = this._secure.split('.');
+    return parts[0] + '.' + parts[1];
+  }
+})
 
 
 module.exports = Token
