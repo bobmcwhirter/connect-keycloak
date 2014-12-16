@@ -170,8 +170,8 @@ Keycloak.prototype.register = function() {
   setTimeout( this.register.bind(this), 30000 );
 }
 
-Keycloak.prototype.protect = function() {
-  return new Protect(this).getFunction();
+Keycloak.prototype.protect = function(spec) {
+  return new Protect(this, spec).getFunction();
 }
 
 Keycloak.prototype.middleware = function(options) {

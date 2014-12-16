@@ -11,6 +11,9 @@ function Token(keycloak, token) {
       this._signature = new Buffer( parts[2], 'base64' );
 
       this._valid = keycloak.validateToken( this );
+
+      this._realmRoles = this._content.realm_access.roles;
+      this._applicationRoles = this._content.resource_access[ keycloak._resource ].roles;
     } catch (err) {
       // ignore, but invalid
       this._valid = false;
@@ -20,6 +23,14 @@ function Token(keycloak, token) {
 
 Token.prototype.isValid = function() {
   return this._valid;
+}
+
+Token.prototype.hasApplicationRole = function(role) {
+  return this._applicationRoles.indexOf( role ) >= 0;
+}
+
+Token.prototype.hasRealmRole = function(role) {
+  return this._realmRoles.indexOf( role ) >= 0;
 }
 
 Object.defineProperty( Token.prototype, 'givenName', {

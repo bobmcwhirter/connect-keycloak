@@ -2,8 +2,29 @@ var Token = require('./token' );
 
 var url = require('url');
 
-function Protect(keycloak) {
+function simpleGuard(role,token) {
+  if ( role.indexOf( "app:" ) == 0 ) {
+    return token.hasApplicationRole( role.substring( 4 ) );
+  }
+  if ( role.indexOf( "realm:" ) == 0 ) {
+    return token.hasRealmRole( role.substring( 6 ) );
+  }
+
+  return false;
+}
+
+function Protect(keycloak, spec) {
   this._keycloak = keycloak;
+
+  if ( ! spec ) {
+    this._guard = undefined;
+  } else if ( typeof spec == 'string' ) {
+    this._guard = simpleGuard.bind( undefined, spec );
+  } else if ( typeof spec == 'function' ) {
+    var builder = new Builder();
+    spec( builder );
+    this._guard = builder.guard;
+  }
 }
 
 
@@ -28,8 +49,15 @@ Protect.prototype.forceLogin = function(request, response) {
 Protect.prototype._protect = function(request, response, next) {
 
   if ( response.locals.token ) {
-    return next();
+    if ( ! this._guard || this._guard( response.locals.token ) ) {
+      return next();
+    }
+
+    response.status( 403 );
+    response.end( "Access denied" );
+    return;
   }
+
   this.forceLogin(request, response);
 
 }
