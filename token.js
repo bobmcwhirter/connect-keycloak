@@ -12,6 +12,8 @@ function Token(keycloak, token) {
 
       this._valid = keycloak.validateToken( this );
 
+      //console.log( this._content );
+
       this._realmRoles = this._content.realm_access.roles;
       this._applicationRoles = this._content.resource_access[ keycloak._resource ].roles;
     } catch (err) {
@@ -60,6 +62,12 @@ Object.defineProperty( Token.prototype, 'secure', {
 Object.defineProperty( Token.prototype, 'issuedAt', {
   get: function() {
     return this._content.iat;
+  }
+})
+
+Object.defineProperty( Token.prototype, 'expiresAt', {
+  get: function() {
+    return this._content.exp;
   }
 })
 

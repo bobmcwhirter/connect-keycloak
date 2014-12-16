@@ -88,8 +88,6 @@ Keycloak.prototype.constructToken = function(request, response, tokenText, callb
     return callback();
   }
 
-  this._adapter.setToken( request, response, tokenText );
-
   callback(null, token );
 }
 
@@ -99,9 +97,15 @@ Keycloak.prototype.getTokenFromRequest = function(request, response, callback) {
 
 Keycloak.prototype.getTokenFromCode = function(request, response, code, callback) {
   var self = this;
+
+  var sessionID = this._adapter.getSessionID( request );
+  var params = 'code=' + code + '&application_session_state=' + sessionID + '&application_session_host=localhost';
+
   var options = url.parse( this._realmURL + '/tokens/access/codes' );
   options.method = 'POST';
+  options.agent = false;
   options.headers = {
+    'Content-Length': params.length,
     'Content-Type': 'application/x-www-form-urlencoded',
     'Authorization': 'Basic ' + new Buffer( this._resource + ':' + this._credentials.secret ).toString('base64' ),
   };
@@ -114,14 +118,26 @@ Keycloak.prototype.getTokenFromCode = function(request, response, code, callback
     authResponse.on( 'end', function() {
       var data = JSON.parse( json );
       //return self.getToken( { token: data.access_token, request: request }, callback );
-      return self.constructToken( request, response, data.access_token, callback );
+      return self.constructToken( request, response, data.access_token, function(err, token) {
+        if ( token ) {
+          self._adapter.setToken( request, response, token._secure );
+        }
+        callback( null, token );
+      } );
+      authResponse.connection.close();
     })
   } );
 
-  var sessionID = this._adapter.getSessionID( request );
-  var params = 'code=' + code + '&application_session_state=' + sessionID + '&application_session_host=localhost';
-  authRequest.write( params );
-  authRequest.end();
+  authRequest.on('error', function(err) {
+    callback( err, null );
+  })
+
+  authRequest.setTimeout( 3000, function() {
+    callback( new Error( "timeout requesting token"), null );
+  })
+
+  //authRequest.write( params );
+  authRequest.end( params );
 }
 
 Keycloak.prototype.getPublicKey = function() {
@@ -139,6 +155,10 @@ Keycloak.prototype.getPublicKey = function() {
 
 Keycloak.prototype.validateToken = function(token) {
   if ( token.issuedAt < this._notBefore ) {
+    return false;
+  }
+
+  if ( ( token.expiresAt * 1000 ) < Date.now() ) {
     return false;
   }
 
@@ -186,9 +206,9 @@ Keycloak.prototype.middleware = function(options) {
   var postAuth = new PostAuth(this);
   var tokenAttacher = new TokenAttacher(this);
 
+  middlewares.push( postAuth.getFunction() );
   middlewares.push( logout.getFunction() );
   middlewares.push( adminLogout.getFunction() );
-  middlewares.push( postAuth.getFunction() );
   middlewares.push( tokenAttacher.getFunction() );
 
   return middlewares;

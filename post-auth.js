@@ -29,8 +29,6 @@ PostAuth.prototype._postAuth = function(request, response, next) {
       return;
     }
 
-    //self._keycloak._adapter.setToken( request, response, token.secure );
-
     var urlParts = {
       pathname: request.path,
       query: request.query,
@@ -43,7 +41,6 @@ PostAuth.prototype._postAuth = function(request, response, next) {
     var cleanURL = url.format( urlParts );
 
     response.redirect( cleanURL );
-    //next();
   } );
 
 }
