@@ -21,9 +21,7 @@ function Protect(keycloak, spec) {
   } else if ( typeof spec == 'string' ) {
     this._guard = simpleGuard.bind( undefined, spec );
   } else if ( typeof spec == 'function' ) {
-    var builder = new Builder();
-    spec( builder );
-    this._guard = builder.guard;
+    this._guard = spec
   }
 }
 
