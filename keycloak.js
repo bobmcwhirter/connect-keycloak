@@ -8,8 +8,9 @@ var AdminLogout   = require('./admin-logout');
 var Logout        = require('./logout');
 var PostAuth      = require('./post-auth' );
 var TokenAttacher = require('./token-attacher' );
+var Protect       = require('./protect');
 
-var Protect    = require('./protect');
+var KeycloakAdmin = require('./keycloak-admin');
 
 var fs   = require('fs');
 var path = require('path');
@@ -37,9 +38,16 @@ Keycloak.prototype.config = function(config) {
   this._resource       = config['resource'];
   this._credentials    = config['credentials'];
 
-  this._realmURL  = this._authServerURL + '/realms/' + encodeURIComponent(this._realm);
+  this._realmURL       = this._authServerURL + '/realms/' + encodeURIComponent(this._realm);
+  this._applicationURL = this._realmURL + '/applications/' + encodeURIComponent( this._resource );
+
   this._loginURL  = this._realmURL + '/tokens/login?client_id=' + encodeURIComponent( this._resource );
   this._logoutURL = this._realmURL + '/tokens/logout';
+
+}
+
+Keycloak.prototype.admin = function(token) {
+  return new KeycloakAdmin(this, token);
 }
 
 
