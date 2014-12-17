@@ -47,7 +47,7 @@ Protect.prototype.forceLogin = function(request, response) {
 Protect.prototype._protect = function(request, response, next) {
 
   if ( response.locals.token ) {
-    if ( ! this._guard || this._guard( response.locals.token ) ) {
+    if ( ! this._guard || this._guard( response.locals.token, request, response ) ) {
       return next();
     }
 
