@@ -10,47 +10,51 @@ AdminLogout.prototype.getFunction = function() {
   return this._adminLogout.bind(this);
 };
 
-AdminLogout.prototype._adminLogout = function(request, response, next) {
+module.exports = function(keycloak, adminUrl) {
 
-  if ( request.url != this._url ) {
-    return next();
+  var url = adminUrl;
+  if ( url[ url.length - 1 ] != '/' ) {
+    url = url + '/';
   }
 
-  var data = '';
-  var self = this;
+  url += 'k_logout';
 
-  request.on( 'data', function(d) {
-    data += d.toString();
-  });
+  return function(request, response, next) {
+    if ( request.url != url ) {
+      return next();
+    }
 
-  request.on( 'end', function() {
-    response.send( 'ok' );
-    /*
-    var parts = data.split('.');
-    var payload =  JSON.parse( new Buffer( parts[1], 'base64' ).toString() );
-    if ( payload.action == 'LOGOUT' ) {
-      var sessionIDs = payload.adapterSessionIds;
-      if ( ! sessionIDs ) {
-        self._keycloak._notBefore = payload.notBefore;
-        response.send( 'ok' );
-        return;
-      }
-      if ( sessionIDs && sessionIDs.length > 0 ) {
-        var seen = 0;
-        sessionIDs.forEach( function(id) {
-          self._keycloak._adapter.clearTokenForSession(request, id, function() {
+    var data = '';
+    var self = this;
+
+    request.on( 'data', function(d) {
+      data += d.toString();
+    });
+
+    request.on( 'end', function() {
+      var parts = data.split('.');
+      var payload =  JSON.parse( new Buffer( parts[1], 'base64' ).toString() );
+      if ( payload.action == 'LOGOUT' ) {
+        var sessionIDs = payload.adapterSessionIds;
+        if ( ! sessionIDs ) {
+          keycloak.grantManager.notBefore = payload.notBefore;
+          response.send( 'ok' );
+          return;
+        }
+        if ( sessionIDs && sessionIDs.length > 0 ) {
+          var seen = 0;
+          sessionIDs.forEach( function(id) {
+            keycloak.unstoreGrant(id);
             ++seen;
             if ( seen == sessionIDs.length ) {
               response.send( 'ok' );
             }
           });
-        });
-      } else {
-        response.send( 'ok' );
+        } else {
+          response.send( 'ok' );
+        }
       }
-    }
-    */
-  });
+    });
+  };
 };
 
-module.exports = AdminLogout;

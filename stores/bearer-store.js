@@ -14,19 +14,4 @@ BearerStore.get = function(request) {
   }
 };
 
-BearerStore.interactive = false;
-
-BearerStore.wrap = function(grant) {
-  grant.store   = store;
-  grant.unstore = unstore;
-};
-
-BearerStore.store = function(request, response) {
-  // no-op
-};
-
-BearerStore.unstore = function(request, response) {
-  // no-op
-};
-
 module.exports = BearerStore;

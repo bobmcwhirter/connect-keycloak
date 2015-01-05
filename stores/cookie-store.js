@@ -14,19 +14,17 @@ CookieStore.get = function(request) {
   }
 };
 
-CookieStore.interactive = true;
+var store = function(request, response) {
+  response.cookie( CookieStore.TOKEN_KEY, JSON.stringify( this ) );
+};
+
+var unstore = function(request, response) {
+  response.clearCookie( CookieStore.TOKEN_KEY );
+};
 
 CookieStore.wrap = function(grant) {
   grant.store   = store;
   grant.unstore = unstore;
-};
-
-CookieStore.store = function(request, response) {
-  response.cookie( CookieStore.TOKEN_KEY, JSON.stringify( this ) );
-};
-
-CookieStore.unstore = function(request, response) {
-  response.clearCookie( CookieStore.TOKEN_KEY );
 };
 
 module.exports = CookieStore;

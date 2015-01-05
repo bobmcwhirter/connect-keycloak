@@ -19,11 +19,17 @@ function Keycloak(config, keycloakConfig) {
   this.grantManager = new GrantManager( this.config );
 
   this.stores = [ BearerStore ];
-  if ( config && config.store == 'cookie' ) {
-    this.stores.push( CookieStore );
-  } else if ( config && config.store == 'session' ) {
-    this.stores.push( SessionStore );
+
+  if ( config && config.store && config.cookies ) {
+    throw new Error( "Either `store` or `cookies` may be set, but not both" );
   }
+
+  if ( config && config.store ) {
+    this.stores.push( new SessionStore( config.store ) );
+  } else if ( config && config.cookies ) {
+    this.stores.push( CookieStore );
+  }
+
 }
 
 /* Locate an existing grant related to this request */
@@ -33,42 +39,45 @@ Keycloak.prototype.getGrant = function(request) {
   for ( var i = 0 ; i < this.stores.length ; ++i ) {
     grantData = this.stores[i].get( request );
     if ( grantData ) {
-      console.log( "getGrant::GOT GRANT" );
       var grant = this.grantManager.createGrant( grantData );
-      grant.interactive = this.stores[i].interactive;
-      grant.store       = this.stores[i].store;
-      grant.unstore     = this.stores[i].unstore;
+      this.stores[i].wrap( grant );
       return grant;
     }
   }
 };
 
 Keycloak.prototype.storeGrant = function(grant, request, response) {
-  console.log( "STORING GRANT", this.stores.length  );
-  for ( var i = 0 ; i < this.stores.length ; ++i ) {
-    console.log( "checking store", i, this.stores[i], this.stores[i].interactive );
-    if ( this.stores[i].interactive ) {
-      console.log( "storing", this.stores[i] );
-      grant.interactive = this.stores[i].interactive;
-      grant.store       = this.stores[i].store;
-      grant.unstore     = this.stores[i].unstore;
-      grant.store(request, response);
-      return grant;
-    }
+  if ( this.stores.length < 2 ) {
+    // cannot store, bearer-only, this is weird
+    return;
   }
+
+  this.stores[1].wrap( grant );
+  grant.store(request, response);
+  return grant;
+}
+
+Keycloak.prototype.unstoreGrant = function(sessionId) {
+  if ( this.stores.length < 2 ) {
+    // cannot unstore, bearer-only, this is weird
+    return;
+  }
+
+  this.stores[1].clear( sessionId );
 }
 
 Keycloak.prototype.getGrantFromCode = function(code, request, response) {
+  if ( this.stores.length < 2 ) {
+    // bearer-only, cannot do this;
+    throw new Error( "Cannot exchange code for grant in bearer-only mode" );
+  }
+
+  var sessionId = this.stores[1].getId( request );
+
   var self = this;
-  return this.grantManager.obtainFromCode( code )
+  return this.grantManager.obtainFromCode( code, sessionId )
     .then( function(grant) {
-      console.log( "GOT GRANT" );
-      try {
       self.storeGrant(grant, request, response);
-      } catch(err) {
-        console.log( err );
-      }
-      console.log( "STORE COMPLETE" );
       return grant;
     })
 };
@@ -98,10 +107,8 @@ Keycloak.prototype.middleware = function(options) {
 
   var middlewares = [];
 
-  var adminLogout = new AdminLogout(this, options.admin);
-
   middlewares.push( PostAuth(this) );
-  middlewares.push( adminLogout.getFunction() );
+  middlewares.push( AdminLogout(this, options.admin) );
   middlewares.push( GrantAttacher(this) );
   middlewares.push( Logout(this, options.logout) );
 

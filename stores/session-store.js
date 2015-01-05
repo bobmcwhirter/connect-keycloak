@@ -1,11 +1,16 @@
 
-SessionStore = {};
+function SessionStore(store) {
+  this.store = store;
+}
 
 SessionStore.TOKEN_KEY = 'keycloak-token';
 
-SessionStore.get = function(request) {
+SessionStore.prototype.getId = function(request) {
+  return request.session.id;
+}
+
+SessionStore.prototype.get = function(request) {
   var value = request.session[ SessionStore.TOKEN_KEY ];
-  console.log( "session token: " + value );
   if ( value ) {
     try {
       return JSON.parse( value );
@@ -15,20 +20,27 @@ SessionStore.get = function(request) {
   }
 };
 
-SessionStore.interactive = true;
+SessionStore.prototype.clear = function(sessionId) {
+  var self = this;
+  this.store.get( sessionId, function(err, session) {
+    if ( session ) {
+      delete session[ SessionStore.TOKEN_KEY ];
+      self.store.set( sessionId, session );
+    }
+  });
+}
 
-SessionStore.wrap = function(grant) {
-  grant.store   = store;
-  grant.unstore = unstore;
-};
-
-SessionStore.store = function(request, response) {
+var store = function(request, response) {
   request.session[ SessionStore.TOKEN_KEY ] = JSON.stringify( this );
 };
 
-SessionStore.unstore = function(request, response) {
-  console.log( "UNSTORE" );
+var unstore = function(request, response) {
   delete request.session[ SessionStore.TOKEN_KEY ];
+};
+
+SessionStore.prototype.wrap = function(grant) {
+  grant.store   = store;
+  grant.unstore = unstore;
 };
 
 module.exports = SessionStore;

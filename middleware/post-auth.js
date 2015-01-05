@@ -12,11 +12,8 @@ module.exports = function(keycloak) {
       return;
     }
 
-    console.log( "getting grant from code", request.query.code );
-
     keycloak.getGrantFromCode( request.query.code, request, response )
       .then( function(grant) {
-        console.log( "GOT GRANT" );
         var urlParts = {
           pathname: request.path,
           query: request.query,
@@ -28,7 +25,6 @@ module.exports = function(keycloak) {
 
         var cleanUrl = URL.format( urlParts );
 
-        console.log( "redirect", cleanUrl );
         response.redirect( cleanUrl );
       });
 

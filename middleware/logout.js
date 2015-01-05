@@ -16,7 +16,6 @@ module.exports = function(keycloak, logoutUrl) {
 
     var keycloakLogoutUrl = keycloak.logoutUrl(redirectUrl);
 
-    console.log( "redirect to keycloak: " + keycloakLogoutUrl );
     response.redirect( keycloakLogoutUrl );
   };
 };
