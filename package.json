@@ -1,14 +1,29 @@
 {
   "name": "connect-keycloak",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "Keycloak Connect Middleware",
-  "main": "keycloak.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/jasmine/bin/jasmine.js",
+    "build": "node_modules/grunt-cli/bin/grunt"
   },
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "devDependencies": {
-    "jasmine": "^2.1.1"
-  }
+    "jasmine": "^2.1.1",
+    "grunt": "^0.4.5",
+    "grunt-cli": "^0.1.13",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-contrib-uglify": "^0.6.0",
+    "grunt-docco": "^0.3.3"
+  },
+  "dependencies": {
+    "keycloak-auth-utils": "0.0.5",
+    "q": "^1.1.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/bobmcwhirter/connect-keycloak.git"
+  },
+  "bugs": "http://github.com/bobmcwhirter/connect-keycloak/issues"
 }

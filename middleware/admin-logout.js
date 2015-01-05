@@ -1,14 +1,14 @@
 function AdminLogout(keycloak, url) {
   this._keycloak = keycloak;
   if ( url[ url.length - 1 ] != '/' ) {
-    url += '/;'
+    url += '/;';
   }
   this._url = url + 'k_logout';
 }
 
 AdminLogout.prototype.getFunction = function() {
   return this._adminLogout.bind(this);
-}
+};
 
 AdminLogout.prototype._adminLogout = function(request, response, next) {
 
@@ -21,8 +21,11 @@ AdminLogout.prototype._adminLogout = function(request, response, next) {
 
   request.on( 'data', function(d) {
     data += d.toString();
-  })
+  });
+
   request.on( 'end', function() {
+    response.send( 'ok' );
+    /*
     var parts = data.split('.');
     var payload =  JSON.parse( new Buffer( parts[1], 'base64' ).toString() );
     if ( payload.action == 'LOGOUT' ) {
@@ -41,12 +44,13 @@ AdminLogout.prototype._adminLogout = function(request, response, next) {
               response.send( 'ok' );
             }
           });
-        })
+        });
       } else {
         response.send( 'ok' );
       }
     }
-  })
-}
+    */
+  });
+};
 
 module.exports = AdminLogout;
