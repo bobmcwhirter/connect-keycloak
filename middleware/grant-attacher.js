@@ -1,7 +1,11 @@
 
 module.exports = function(keycloak) {
   return function(request, response, next) {
-    response.locals.grant = keycloak.getGrant( request );
-    next();
+    keycloak.getGrant( request, response )
+      .then( function(grant) {
+        response.locals.grant = grant;
+      })
+      .then( next )
+      .catch( next );
   };
 };

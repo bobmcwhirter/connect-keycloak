@@ -10,14 +10,7 @@ SessionStore.prototype.getId = function(request) {
 }
 
 SessionStore.prototype.get = function(request) {
-  var value = request.session[ SessionStore.TOKEN_KEY ];
-  if ( value ) {
-    try {
-      return JSON.parse( value );
-    } catch (err) {
-      // ignore
-    }
-  }
+  return request.session[ SessionStore.TOKEN_KEY ];
 };
 
 SessionStore.prototype.clear = function(sessionId) {
@@ -31,7 +24,7 @@ SessionStore.prototype.clear = function(sessionId) {
 }
 
 var store = function(request, response) {
-  request.session[ SessionStore.TOKEN_KEY ] = JSON.stringify( this );
+  request.session[ SessionStore.TOKEN_KEY ] = this.__raw;
 };
 
 var unstore = function(request, response) {

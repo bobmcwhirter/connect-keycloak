@@ -1,3 +1,5 @@
+var Q = require('q');
+
 var crypto = require('crypto');
 
 
@@ -33,17 +35,33 @@ function Keycloak(config, keycloakConfig) {
 }
 
 /* Locate an existing grant related to this request */
-Keycloak.prototype.getGrant = function(request) {
-  var grantData;
+Keycloak.prototype.getGrant = function(request, response) {
+
+  var deferred = Q.defer();
+
+  var rawData;
 
   for ( var i = 0 ; i < this.stores.length ; ++i ) {
-    grantData = this.stores[i].get( request );
-    if ( grantData ) {
-      var grant = this.grantManager.createGrant( grantData );
-      this.stores[i].wrap( grant );
-      return grant;
+    rawData = this.stores[i].get( request );
+    if ( rawData ) {
+      //var grant = this.grantManager.createGrant( rawData );
+      var grant = this.grantManager.createGrant( rawData );
+      var self = this;
+
+      this.grantManager.ensureFreshness(grant)
+        .then( function(grant) {
+          self.stores[i].wrap( grant );
+          grant.store(request, response);
+          deferred.resolve( grant );
+        });
+
+      return deferred.promise;
     }
   }
+
+  deferred.reject();
+
+  return deferred.promise;
 };
 
 Keycloak.prototype.storeGrant = function(grant, request, response) {
