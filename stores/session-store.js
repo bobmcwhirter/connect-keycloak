@@ -7,7 +7,7 @@ SessionStore.TOKEN_KEY = 'keycloak-token';
 
 SessionStore.prototype.getId = function(request) {
   return request.session.id;
-}
+};
 
 SessionStore.prototype.get = function(request) {
   return request.session[ SessionStore.TOKEN_KEY ];
@@ -21,7 +21,7 @@ SessionStore.prototype.clear = function(sessionId) {
       self.store.set( sessionId, session );
     }
   });
-}
+};
 
 var store = function(request, response) {
   request.session[ SessionStore.TOKEN_KEY ] = this.__raw;
