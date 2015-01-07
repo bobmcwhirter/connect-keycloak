@@ -13,8 +13,18 @@ module.exports = function(grunt) {
         }
       }
     },
+    touch: {
+      src: [ 'doc/.nojekyll' ]
+    },
     jshint: {
       all: ['Gruntfile.js', '*.js', 'middleware/*.js', 'stores/*.js', 'test/**/*.js']
+    },
+    'gh-pages': {
+      options: {
+        base: 'doc',
+        dotfiles: true,
+      },
+      src: ['**']
     }
   });
 
@@ -22,7 +32,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-doxx');
 
   // Default task(s).
-  grunt.registerTask('default', ['jshint', 'doxx']);
+  grunt.registerTask('default', ['jshint', 'doxx', 'touch']);
 
 };
 
