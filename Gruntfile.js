@@ -30,6 +30,8 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-doxx');
+  grunt.loadNpmTasks('grunt-touch');
+  grunt.loadNpmTasks('grunt-gh-pages');
 
   // Default task(s).
   grunt.registerTask('default', ['jshint', 'doxx', 'touch']);
