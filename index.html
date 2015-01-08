@@ -106,8 +106,136 @@ app.get( &#39;/:section/:page&#39;, keycloak.protect( protectBySection ), sectio
 </code></pre><h2>Additional URLs</h2>
 <h3>Explicit user-triggered logout</h3>
 <p>By default, the middleware catches calls to <code>/logout</code> to send the user through a<br />Keycloak-centric logout workflow. This can be changed by specifying a <code>logout</code><br />configuration parameter to the <code>middleware()</code> call:</p><pre><code>app.use( keycloak.middleware( { logout: &#39;/logoff&#39; } );
-</code></pre><p>Also, the middleware supports callbacks from the Keycloak console to logout a single<br />session or all sessions.  By default, these type of admin callbacks occur relative<br />to the root URL of <code>/</code> but can be changed by providing an <code>admin</code> parameter<br />to the <code>middleware()</code> call:</p><pre><code>app.use( keycloak.middleware( { admin: &#39;/callbacks&#39; } );
-</code></pre><p>Normally this does not need to be changed.</p></section>
+</code></pre><h3>Keycloak Admin Callbacks</h3>
+<p>Also, the middleware supports callbacks from the Keycloak console to logout a single<br />session or all sessions.  By default, these type of admin callbacks occur relative<br />to the root URL of <code>/</code> but can be changed by providing an <code>admin</code> parameter<br />to the <code>middleware()</code> call:</p><pre><code>app.use( keycloak.middleware( { admin: &#39;/callbacks&#39; } );
+</code></pre><p>Normally this does not need to be changed.</p><h1>A full example</h1>
+<p>The <code>connect-keycloak-example</code> has this example:</p><h2><code>example.js</code></h2>
+<pre><code>var Keycloak = require(&#39;connect-keycloak&#39;);
+
+var express = require(&#39;express&#39;);
+var session = require(&#39;express-session&#39;)
+
+var app = express();
+
+// Allow passing in a port from the command-line.
+var p = 3000;
+if ( process.argv.length &gt;= 3 ) {
+  p = Number( process.argv[2] );
+}
+
+app.set(&#39;port&#39;, p );
+
+// Create a session-store to be used by both the express-session
+// middleware and the keycloak middleware.
+
+var memoryStore = new session.MemoryStore();
+
+app.use( session({
+  secret: &#39;aaslkdhlkhsd&#39;,
+  resave: false,
+  saveUninitialized: true,
+  store: memoryStore,
+} ))
+
+
+// Provide the session store to the Keycloak so that sessions
+// can be invalidated from the Keycloak console callback.
+//
+// Additional configuration is read from keycloak.json file
+// installed from the Keycloak web console.
+
+var keycloak = new Keycloak({
+  store: memoryStore
+});
+
+// Install the Keycloak middleware.
+//
+// Specifies that the user-accessible application URL to
+// logout should be mounted at /logout
+//
+// Specifies that Keycloak console callbacks should target the
+// root URL.  Various permutations, such as /k_logout will ultimately
+// be appended to the admin URL.
+
+app.use( keycloak.middleware( {
+  logout: &#39;/logout&#39;,
+  admin: &#39;/&#39;,
+} ));
+
+
+// A normal un-protected public URL.
+
+app.get( &#39;/&#39;, function(req,resp) {
+  resp.send( &quot;Howdy!&quot; );
+} )
+
+
+// A protection guard can take up to 3 arguments, and is passed
+// the access_token, the HTTP request and the HTTP response.
+//
+// The token can be tested for roles:
+//
+// * &#39;foo&#39; is a simple application role &#39;foo&#39; for the current application
+// * &#39;bar:foo&#39; is an application role &#39;foo&#39; for the application &#39;bar&#39;
+// * &#39;realm:foo&#39; is a realm role &#39;foo&#39; for the application&#39;s realm
+//
+// A protection guard can be passed to keycloak.protect(...) for any
+// URL.  If it returns true, then the request is allowed.  If false,
+// access will be denied.
+
+var groupGuard = function(token, req, resp) {
+  return token.hasRole( req.params.group );
+}
+
+// The keycloak.protect(...) function can take a guard function to perform
+// advanced protection of a URL.
+//
+// Additionally (not shown) it can take simple string role specifier identical
+// to those used above by token.hasRole(...).
+//
+// In all cases, if a user is not-yet-authenticated, the Keycloak token authentication
+// dance will begin by redirecting the user to the Keycloak login screen.  If
+// authenticated correctly with Keycloak itself, the workflow continues to exchange
+// the Keycloak-provided for a signed Keycloak access_token.
+//
+// A user&#39;s authentication may be provided through the HTTP session (via cookies)
+// or through Bearer authentication header.
+//
+// In the event a user is authenticated, but his access-token has expired, if a
+// refresh-token is available, the middleware will attempt to perform a refresh.
+//
+// All of the above workflow is transparent to the user, who ultimately will
+// access the requested resource or be denied, modulo an initial login through
+// Keycloak itself.
+
+app.get( &#39;/:group/:page&#39;, keycloak.protect( groupGuard ), function(req,resp) {
+  resp.send( &#39;Page: &#39; + req.params.page + &#39; for Group: &#39; + req.params.group + &#39;&lt;br&gt;&lt;a href=&quot;/logout&quot;&gt;logout&lt;/a&gt;&#39;);
+})
+
+// A simple keycloak.protect() ensures that a user is authenticated
+// but provides no additional RBAC protection.
+
+app.get( &#39;/:page&#39;, keycloak.protect(), function(req,resp) {
+  resp.send( &#39;Page: &#39; + req.params.page + &#39;&lt;br&gt;&lt;a href=&quot;/logout&quot;&gt;logout&lt;/a&gt;&#39;);
+} );
+
+var server = app.listen(app.settings.port, function () {
+  var host = server.address().address
+  var port = server.address().port
+  console.log(&#39;Example app listening at http://%s:%s&#39;, host, port)
+})
+</code></pre><h2><code>keycloak.json</code></h2>
+<p>Alongside the <code>example.js</code> lives <code>keycloak.json</code> obtained from our Keycloak<br />admin console when we provisioned this app.</p><pre><code>{
+  &quot;realm&quot;: &quot;example-realm&quot;,
+  &quot;realm-public-key&quot;: &quot;MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrVrCuTtArbgaZzL1hvh0xtL5mc7o0NqPVnYXkLvgcwiC3BjLGw1tGEGoJaXDuSaRllobm53JBhjx33UNv+5z/UMG4kytBWxheNVKnL6GgqlNabMaFfPLPCF8kAgKnsi79NMo+n6KnSY8YeUmec/p2vjO2NjsSAVcWEQMVhJ31LwIDAQAB&quot;,
+  &quot;auth-server-url&quot;: &quot;http://localhost:8080/auth&quot;,
+  &quot;ssl-required&quot;: &quot;none&quot;,
+  &quot;resource&quot;: &quot;example-app&quot;,
+  &quot;credentials&quot;: {
+    &quot;secret&quot;: &quot;89efcbdf-ee95-4292-bbd9-29304e6744c7&quot;
+  }
+}
+</code></pre></section>
         </div>
       </div>
     </div>
