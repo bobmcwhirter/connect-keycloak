@@ -5,7 +5,9 @@ module.exports = function(keycloak) {
       .then( function(grant) {
         response.locals.grant = grant;
       })
-      .then( next )
+      .then( function() {
+        next();
+      } )
       .catch( next );
   };
 };

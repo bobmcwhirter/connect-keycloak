@@ -5,6 +5,7 @@ function forceLogin(keycloak, request, response) {
   var port = request.app.settings.port || 3000;
 
   var redirectUrl = 'http://' + host + ( port == 80 ? '' : ':' + port ) + request.url + '?auth_callback=1';
+  request.session.auth_redirect_uri = redirectUrl;
 
   var uuid = UUID();
   var loginURL = keycloak.loginUrl( uuid, redirectUrl );

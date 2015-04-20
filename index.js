@@ -193,7 +193,10 @@ Keycloak.prototype.getGrant = function(request, response) {
       .then( function(grant) {
         self.storeGrant( grant, request, response );
         deferred.resolve( grant );
-      });
+      })
+      .catch( function(err) {
+        deferred.reject( err );
+      } );
 
     return deferred.promise;
   }
@@ -231,7 +234,7 @@ Keycloak.prototype.getGrantFromCode = function(code, request, response) {
   var sessionId = this.stores[1].getId( request );
 
   var self = this;
-  return this.grantManager.obtainFromCode( code, sessionId )
+  return this.grantManager.obtainFromCode( request, code, sessionId )
     .then( function(grant) {
       self.storeGrant(grant, request, response);
       return grant;
